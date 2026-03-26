@@ -67,11 +67,11 @@ export function StaffHomeScreen({ profile, students, materials, tests, navigate 
       <StaffHeaderBackground />
       <View style={styles.profileHeader}>
         <View>
-          <Text style={styles.profileTitle}>Hello, {profile.name.split(' ')[1]}!</Text>
-          <Text style={styles.profileSubtitle}>{profile.subject} Department</Text>
+          <Text style={styles.profileTitle}>Hello{profile.name ? `, ${profile.name.split(' ')[1] || profile.name}` : ''}!</Text>
+          <Text style={styles.profileSubtitle}>{profile.subject || 'Staff'} Department</Text>
         </View>
         <View style={styles.profileAvatar}>
-          <Text style={styles.profileAvatarText}>{profile.name.charAt(0)}</Text>
+          <Text style={styles.profileAvatarText}>{profile.name ? profile.name.charAt(0) : 'S'}</Text>
         </View>
       </View>
 
@@ -111,22 +111,26 @@ export function StaffHomeScreen({ profile, students, materials, tests, navigate 
       </View>
 
       <Text style={styles.sectionTitleBlackBase}>Recent Tests</Text>
-      {tests.slice(0, 2).map((test) => (
-        <StaffCard key={test.id} style={styles.testCard}>
-          <View style={styles.testCardInner}>
-            <View style={styles.testIconWrap}>
-              <BookOpen size={24} color={THEME.colors.primary} />
+      {tests.length === 0 ? (
+        <Text style={{ marginHorizontal: 16, color: '#6B7280', fontStyle: 'italic', marginBottom: 24 }}>No tests available.</Text>
+      ) : (
+        tests.slice(0, 2).map((test) => (
+          <StaffCard key={test.id} style={styles.testCard}>
+            <View style={styles.testCardInner}>
+              <View style={styles.testIconWrap}>
+                <BookOpen size={24} color={THEME.colors.primary} />
+              </View>
+              <View style={styles.testInfo}>
+                <Text style={styles.testTitle} numberOfLines={1}>{test.title}</Text>
+                <Text style={styles.testSubtitle}>{test.date} • {test.duration}</Text>
+              </View>
+              <View style={[styles.testStatusBtn, test.status === 'Completed' ? styles.statusBtnCompleted : styles.statusBtnActive]}>
+                <Text style={[styles.testStatusText, test.status === 'Completed' ? styles.statusTextCompleted : styles.statusTextActive]}>{test.status}</Text>
+              </View>
             </View>
-            <View style={styles.testInfo}>
-              <Text style={styles.testTitle} numberOfLines={1}>{test.title}</Text>
-              <Text style={styles.testSubtitle}>{test.date} • {test.duration}</Text>
-            </View>
-            <View style={[styles.testStatusBtn, test.status === 'Completed' ? styles.statusBtnCompleted : styles.statusBtnActive]}>
-              <Text style={[styles.testStatusText, test.status === 'Completed' ? styles.statusTextCompleted : styles.statusTextActive]}>{test.status}</Text>
-            </View>
-          </View>
-        </StaffCard>
-      ))}
+          </StaffCard>
+        ))
+      )}
       <View style={{ height: 40 }} />
     </ScrollView>
   );
@@ -185,20 +189,26 @@ export function StudentsScreen({ students, deleteStudent }) {
         </View>
       </View>
       <ScrollView style={{ paddingHorizontal: 16 }}>
-        {filtered.map((student) => (
-          <StaffCard key={student.id} style={{ marginBottom: 12 }}>
-            <View style={styles.studentCardRow}>
-              <View style={styles.studentAvatarWrap}><Text style={styles.studentAvatarText}>{student.avatar}</Text></View>
-              <View style={styles.studentInfo}>
-                <Text style={styles.studentName}>{student.name}</Text>
-                <Text style={styles.studentScore}>Overall Score: {student.score}%</Text>
+        {filtered.length === 0 ? (
+          <View style={{ alignItems: 'center', marginTop: 40 }}>
+            <Text style={{ color: '#6B7280', fontStyle: 'italic' }}>No students found.</Text>
+          </View>
+        ) : (
+          filtered.map((student) => (
+            <StaffCard key={student.id} style={{ marginBottom: 12 }}>
+              <View style={styles.studentCardRow}>
+                <View style={styles.studentAvatarWrap}><Text style={styles.studentAvatarText}>{student.avatar}</Text></View>
+                <View style={styles.studentInfo}>
+                  <Text style={styles.studentName}>{student.name}</Text>
+                  <Text style={styles.studentScore}>Overall Score: {student.score}%</Text>
+                </View>
+                <TouchableOpacity onPress={() => deleteStudent(student.id)} style={styles.deleteBtn}>
+                  <Trash2 size={20} color={THEME.colors.status.error} />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity onPress={() => deleteStudent(student.id)} style={styles.deleteBtn}>
-                <Trash2 size={20} color={THEME.colors.status.error} />
-              </TouchableOpacity>
-            </View>
-          </StaffCard>
-        ))}
+            </StaffCard>
+          ))
+        )}
         <View style={{ height: 40 }} />
       </ScrollView>
     </View>
@@ -252,20 +262,26 @@ export function MaterialsScreen({ materials, deleteMaterial, navigate }) {
         </TouchableOpacity>
       </View>
       <ScrollView style={{ paddingHorizontal: 16 }}>
-        {materials.map((m) => (
-          <StaffCard key={m.id} style={{ marginBottom: 12 }}>
-            <View style={styles.studentCardRow}>
-              <View style={[styles.matIconWrap, { backgroundColor: `${THEME.colors.actions.orange}20` }]}><FileText size={24} color={THEME.colors.actions.orange} /></View>
-              <View style={styles.studentInfo}>
-                <Text style={styles.studentName}>{m.title}</Text>
-                <Text style={styles.studentScore}>{m.type} • {m.size} • Uploaded {m.date}</Text>
+        {materials.length === 0 ? (
+          <View style={{ alignItems: 'center', marginTop: 40 }}>
+            <Text style={{ color: '#6B7280', fontStyle: 'italic' }}>No materials uploaded.</Text>
+          </View>
+        ) : (
+          materials.map((m) => (
+            <StaffCard key={m.id} style={{ marginBottom: 12 }}>
+              <View style={styles.studentCardRow}>
+                <View style={[styles.matIconWrap, { backgroundColor: `${THEME.colors.actions.orange}20` }]}><FileText size={24} color={THEME.colors.actions.orange} /></View>
+                <View style={styles.studentInfo}>
+                  <Text style={styles.studentName}>{m.title}</Text>
+                  <Text style={styles.studentScore}>{m.type} • {m.size} • Uploaded {m.date}</Text>
+                </View>
+                <TouchableOpacity onPress={() => deleteMaterial(m.id)} style={styles.deleteBtn}>
+                  <Trash2 size={20} color={THEME.colors.text.muted} />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity onPress={() => deleteMaterial(m.id)} style={styles.deleteBtn}>
-                <Trash2 size={20} color={THEME.colors.text.muted} />
-              </TouchableOpacity>
-            </View>
-          </StaffCard>
-        ))}
+            </StaffCard>
+          ))
+        )}
         <View style={{ height: 40 }} />
       </ScrollView>
     </View>
@@ -307,9 +323,9 @@ export function StaffProfileScreen({ profile, onLogout }) {
     <View style={styles.screenContainer}>
       <StaffHeaderBackground />
       <View style={styles.spProfileHeader}>
-        <View style={styles.spAvatarWrap}><Text style={styles.spAvatarText}>{profile.name.charAt(0)}</Text></View>
-        <Text style={styles.spName}>{profile.name}</Text>
-        <Text style={styles.spRole}>{profile.role} - {profile.subject}</Text>
+        <View style={styles.spAvatarWrap}><Text style={styles.spAvatarText}>{profile.name ? profile.name.charAt(0) : 'S'}</Text></View>
+        <Text style={styles.spName}>{profile.name || 'Staff Member'}</Text>
+        <Text style={styles.spRole}>{profile.role || 'Staff Role'} - {profile.subject || 'Subject'}</Text>
       </View>
       <View style={{ padding: 16, marginTop: 32 }}>
         <StaffPrimaryButton title="Log Out" color={THEME.colors.status.error} onPress={onLogout} />

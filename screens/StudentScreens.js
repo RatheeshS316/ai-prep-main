@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BrainCircuit, CheckCircle2, Circle, Plus, Trash2, Edit2, PlayCircle, Upload, FileText, UploadCloud, ChevronLeft, Check, Clock, Send, User } from 'lucide-react-native';
+import { BrainCircuit, CheckCircle2, Circle, Plus, Trash2, Edit2, PlayCircle, Upload, FileText, UploadCloud, ChevronLeft, Check, Clock, Send, User, Paperclip, X } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../utils/theme';
 
 export function QuickActionBtn({ icon: Icon, label, bgColors, onPress }) {
@@ -15,7 +16,7 @@ export function QuickActionBtn({ icon: Icon, label, bgColors, onPress }) {
   );
 }
 
-export function HomeTab({ tasks, progressPercent, completedTasks, toggleTask, openModal, deleteTask, navigateToScreen, navigateToTab }) {
+export function HomeTab({ tasks, progressPercent, completedTasks, toggleTask, openModal, deleteTask, navigateToScreen, navigateToTab, currentUser }) {
   return (
     <ScrollView style={styles.tabContainer} contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
       <View style={styles.p6}>
@@ -25,18 +26,20 @@ export function HomeTab({ tasks, progressPercent, completedTasks, toggleTask, op
               <BrainCircuit color={COLORS.blue600} size={20} />
               <Text style={styles.aiPrepText}> AI Prep</Text>
             </View>
-            <Text style={styles.greeting}>Hello, John!</Text>
+            <Text style={styles.greeting}>Hello{currentUser?.fullName ? `, ${currentUser.fullName.split(' ')[0]}` : ''}!</Text>
           </View>
           <View style={styles.profilePicWrapper}>
-            <Image source={{ uri: 'https://i.pravatar.cc/150?img=11' }} style={styles.profilePic} />
+            <View style={[styles.profilePic, { backgroundColor: COLORS.blue500, alignItems: 'center', justifyContent: 'center' }]}>
+              <Text style={{ color: '#FFF', fontSize: 20, fontWeight: '700' }}>{currentUser?.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'S'}</Text>
+            </View>
           </View>
         </View>
 
         <View style={styles.cardMain}>
           <View style={styles.blurCircle} />
-          <Text style={styles.examTitle}>Maths Exam in 5 days</Text>
+          <Text style={styles.examTitle}>No Upcoming Exams</Text>
           <View style={styles.examDaysRow}>
-            <Text style={styles.examDaysNum}>5</Text>
+            <Text style={styles.examDaysNum}>0</Text>
             <Text style={styles.examDaysLabel}>days</Text>
           </View>
           <View style={styles.progressContainer}>
@@ -91,11 +94,11 @@ export function HomeTab({ tasks, progressPercent, completedTasks, toggleTask, op
         </View>
 
         <View style={{ marginTop: 24 }}>
-          <Text style={styles.sectionTitle}>Quick actions</Text>
+          <Text style={styles.sectionTitle}>Boost Your Prep</Text>
           <View style={styles.quickActionsGrid}>
             <QuickActionBtn icon={Upload} label={"Upload\nNotes"} bgColors={[COLORS.blue400, COLORS.blue600]} onPress={() => navigateToScreen('UploadNotes')} />
-            <QuickActionBtn icon={FileText} label={"Take\nTest"} bgColors={[COLORS.orange400, '#F97316']} onPress={() => navigateToTab('Test')} />
-            <QuickActionBtn icon={BrainCircuit} label={"Ask\nAI"} bgColors={[COLORS.green100, COLORS.green500]} onPress={() => navigateToTab('AI')} />
+            <QuickActionBtn icon={FileText} label={"Take\nTest"} bgColors={[COLORS.orange400, '#F97316']} onPress={() => navigateToTab('TestPage')} />
+            <QuickActionBtn icon={BrainCircuit} label={"Ask\nAI"} bgColors={[COLORS.green100, COLORS.green500]} onPress={() => navigateToTab('AIChatPage')} />
             <QuickActionBtn icon={PlayCircle} label={"Watch\nVideos"} bgColors={[COLORS.purple500, '#7C3AED']} onPress={() => navigateToScreen('WatchVideos')} />
           </View>
         </View>
@@ -154,17 +157,7 @@ export function StudyTab({ tasks, openModal, toggleTask, deleteTask }) {
         ))}
       </View>
 
-      <Text style={styles.cardTitle}>Upcoming</Text>
-      <View style={[styles.taskCardBox, { opacity: 0.7 }]}>
-        <View style={styles.upcomingIconWrapper}>
-          <FileText color={COLORS.blue500} size={20} />
-        </View>
-        <View style={{ flex: 1, marginLeft: 16 }}>
-          <Text style={styles.taskCardTitle}>Maths Mock Test</Text>
-          <Text style={styles.taskCardStatusText}>tomorrow</Text>
-        </View>
-        <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray700 }}>10 AM</Text>
-      </View>
+      {/* Upcoming task removed */}
     </ScrollView>
   );
 }
@@ -173,10 +166,7 @@ export function TestTab({ navigation }) {
   const [currentQ, setCurrentQ] = useState(0);
   const [selectedOpt, setSelectedOpt] = useState(null);
   const [isFinished, setIsFinished] = useState(false);
-  const questions = [
-    { q: "Derivative of f(x) = e²ˣ + sin(x)?", opts: ["2e²ˣ + cos(x)", "e²ˣ + cos(x)", "2e²ˣ - cos(x)", "1/2e²ˣ + cos(x)"] }, 
-    { q: "Integral of 2x dx?", opts: ["x² + C", "2x²", "x + C", "2"] }
-  ];
+  const questions = [];
 
   const handleNext = () => {
     if (currentQ < questions.length - 1) { setCurrentQ(c => c + 1); setSelectedOpt(null); } 
@@ -197,6 +187,14 @@ export function TestTab({ navigation }) {
       </TouchableOpacity>
     </View>
   );
+
+  if (questions.length === 0) {
+    return (
+      <View style={[styles.tabContainer, { alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={{ color: COLORS.gray500 }}>No mock tests available currently.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.tabContainer}>
@@ -244,59 +242,146 @@ export function TestTab({ navigation }) {
   );
 }
 
-export function AIChatTab() {
-  const [chatMessages, setChatMessages] = useState([
-    { id: 1, sender: 'user', text: 'How do I solve linear equations with exponents?' },
-    { id: 2, sender: 'ai', text: 'Absolutely! Let\'s solve 2^(x+1) = 8.\n\nStep 1: Write 8 as a power of 2: 2^3\nStep 2: Equate exponents: x+1 = 3\nStep 3: Solve: x = 2.' }
-  ]);
+export function AIChatTab({ currentUser }) {
+  const [chatMessages, setChatMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [attachedFile, setAttachedFile] = useState(null);
   const scrollViewRef = useRef(null);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    setChatMessages([...chatMessages, { id: Date.now(), sender: 'user', text: input }]);
+  useEffect(() => {
+    if (currentUser) {
+      AsyncStorage.getItem(`chat_${currentUser.id}`).then(res => {
+        if (res) setChatMessages(JSON.parse(res));
+      });
+    }
+  }, [currentUser]);
+
+  const saveChat = async (newMsgs) => {
+    setChatMessages(newMsgs);
+    if (currentUser) {
+      await AsyncStorage.setItem(`chat_${currentUser.id}`, JSON.stringify(newMsgs));
+    }
+  };
+
+  const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE"; // Replace with your actual Gemini API Key
+
+  const handleSend = async () => {
+    if (!input.trim() && !attachedFile) return;
+    
+    let textToSend = input.trim();
+    if (attachedFile) {
+      textToSend = `[Attached ${attachedFile.type}: ${attachedFile.name}]\n${textToSend}`;
+    }
+    
+    const userMsg = { id: Date.now(), sender: 'user', text: textToSend };
+    const updated = [...chatMessages, userMsg];
+    saveChat(updated);
     setInput('');
-    setTimeout(() => setChatMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: "I can help with that!" }]), 1000);
+    setAttachedFile(null);
+    setIsTyping(true);
+
+    if (GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE") {
+      setTimeout(() => {
+        saveChat([...updated, { id: Date.now() + 1, sender: 'ai', text: "I see your message! Please add your GEMINI_API_KEY in the source code to let me analyze files or talk to you." }]);
+        setIsTyping(false);
+      }, 1000);
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: textToSend }] }]
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.error) {
+        saveChat([...updated, { id: Date.now() + 1, sender: 'ai', text: `API Error: ${data.error.message}` }]);
+      } else {
+        const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I could not generate a response.";
+        saveChat([...updated, { id: Date.now() + 1, sender: 'ai', text: aiText }]);
+      }
+    } catch (error) {
+      saveChat([...updated, { id: Date.now() + 1, sender: 'ai', text: "Network error connecting to the AI." }]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const handleAttach = () => {
+    setAttachedFile({ name: 'document.pdf', type: 'PDF' });
   };
 
   return (
     <KeyboardAvoidingView style={styles.tabContainer} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.testHeader}>
+      <View style={[styles.testHeader, { borderBottomWidth: 1, borderColor: COLORS.gray100, paddingBottom: 16 }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={styles.aiAvatar}><Text style={styles.aiAvatarText}>AI</Text></View>
-          <Text style={styles.pageTitle}>Study Assistant</Text>
+          <Text style={[styles.pageTitle, { marginBottom: 0 }]}>AI Assistant</Text>
         </View>
       </View>
 
       <ScrollView 
-         style={{ flex: 1, paddingHorizontal: 24 }} 
-         contentContainerStyle={{ paddingBottom: 24 }}
+         style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 16 }} 
+         contentContainerStyle={{ paddingBottom: 24, flexGrow: 1, justifyContent: chatMessages.length === 0 ? 'center' : 'flex-start' }}
          ref={scrollViewRef}
          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
       >
-        {chatMessages.map(msg => {
-          const isUser = msg.sender === 'user';
-          return (
-            <View key={msg.id} style={[styles.msgRow, isUser ? styles.msgUser : styles.msgAi]}>
-              <View style={[styles.msgBubble, isUser ? styles.msgBubbleUser : styles.msgBubbleAi]}>
-                <Text style={[styles.msgText, isUser ? styles.msgTextUser : styles.msgTextAi]}>{msg.text}</Text>
+        {chatMessages.length === 0 ? (
+          <View style={{ alignItems: 'center' }}>
+            <BrainCircuit color={COLORS.gray300} size={64} style={{ marginBottom: 16 }} />
+            <Text style={{ fontSize: 18, fontWeight: '600', color: COLORS.gray400 }}>No messages yet</Text>
+            <Text style={{ fontSize: 14, color: COLORS.gray400, marginTop: 4 }}>Ask me anything or attach files below.</Text>
+          </View>
+        ) : (
+          chatMessages.map(msg => {
+            const isUser = msg.sender === 'user';
+            return (
+              <View key={msg.id} style={[styles.msgRow, isUser ? styles.msgUser : styles.msgAi]}>
+                <View style={[styles.msgBubble, isUser ? styles.msgBubbleUser : styles.msgBubbleAi]}>
+                  <Text style={[styles.msgText, isUser ? styles.msgTextUser : styles.msgTextAi]}>{msg.text}</Text>
+                </View>
               </View>
+            );
+          })
+        )}
+        {isTyping && (
+          <View style={[styles.msgRow, styles.msgAi]}>
+            <View style={[styles.msgBubble, styles.msgBubbleAi]}>
+              <Text style={[styles.msgText, styles.msgTextAi, { fontStyle: 'italic', color: COLORS.gray500 }]}>AI is typing...</Text>
             </View>
-          );
-        })}
+          </View>
+        )}
       </ScrollView>
 
       <View style={styles.chatFooter}>
+        {attachedFile && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.blue50, padding: 8, borderRadius: 8, marginBottom: 8, alignSelf: 'flex-start' }}>
+            <FileText size={16} color={COLORS.blue600} />
+            <Text style={{ fontSize: 12, color: COLORS.blue600, marginLeft: 8, marginRight: 16 }}>{attachedFile.name}</Text>
+            <TouchableOpacity onPress={() => setAttachedFile(null)}>
+              <X size={16} color={COLORS.gray500} />
+            </TouchableOpacity>
+          </View>
+        )}
         <View style={styles.chatInputWrapper}>
+          <TouchableOpacity onPress={handleAttach} style={{ padding: 8, marginRight: 4 }}>
+            <Paperclip color={COLORS.gray500} size={20} />
+          </TouchableOpacity>
           <TextInput 
              style={styles.chatInput} 
              value={input} 
              onChangeText={setInput} 
-             placeholder="Ask anything..." 
+             placeholder="Message AI..." 
              placeholderTextColor={COLORS.gray400} 
              onSubmitEditing={handleSend}
           />
-          <TouchableOpacity onPress={handleSend} style={styles.chatSendBtn}>
+          <TouchableOpacity onPress={handleSend} style={[styles.chatSendBtn, { backgroundColor: input.trim() || attachedFile ? COLORS.blue500 : COLORS.gray300 }]} disabled={!input.trim() && !attachedFile}>
             <Send color="#FFF" size={16} style={{ marginLeft: 2 }} />
           </TouchableOpacity>
         </View>
@@ -305,21 +390,23 @@ export function AIChatTab() {
   );
 }
 
-export function ProfileTab({ onLogout }) {
+export function ProfileTab({ onLogout, currentUser }) {
   return (
     <ScrollView style={styles.tabContainer} contentContainerStyle={styles.p6}>
       <View style={styles.profileHeaderCard}>
-        <Image source={{ uri: 'https://i.pravatar.cc/150?img=11' }} style={styles.profileImg} />
+        <View style={[styles.profileImg, { backgroundColor: COLORS.blue500, alignItems: 'center', justifyContent: 'center' }]}>
+          <Text style={{ color: '#FFF', fontSize: 32, fontWeight: '700' }}>{currentUser?.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'S'}</Text>
+        </View>
         <View>
-          <Text style={styles.pageTitle}>John Doe</Text>
-          <Text style={styles.pageSubtitle}>Student • Grade 12</Text>
+          <Text style={styles.pageTitle}>{currentUser?.fullName || 'Student'}</Text>
+          <Text style={styles.pageSubtitle}>Reg: {currentUser?.registerNumber || 'N/A'}</Text>
         </View>
       </View>
       <Text style={[styles.cardTitle, { marginBottom: 16 }]}>Performance Overview</Text>
       <View style={styles.cardSecondary}>
         <View style={styles.cardHeaderFlex}>
            <Text style={styles.progressLabel}>Overall Score:</Text>
-           <Text style={styles.scoreText}>84%</Text>
+           <Text style={styles.scoreText}>0%</Text>
         </View>
       </View>
       <TouchableOpacity onPress={onLogout} style={styles.logoutBtn}>
@@ -329,7 +416,40 @@ export function ProfileTab({ onLogout }) {
   );
 }
 
-export function StudentUploadNotesScreen({ navigation }) {
+export function StudentUploadNotesScreen({ navigation, currentUser }) {
+  const [uploads, setUploads] = useState([]);
+
+  useEffect(() => {
+    if (currentUser) {
+      AsyncStorage.getItem(`uploads_${currentUser.id}`).then(res => {
+        if (res) setUploads(JSON.parse(res));
+      });
+    }
+  }, [currentUser]);
+
+  const saveFiles = async (newUploads) => {
+    setUploads(newUploads);
+    if (currentUser) {
+      await AsyncStorage.setItem(`uploads_${currentUser.id}`, JSON.stringify(newUploads));
+    }
+  };
+
+  const uploadSimulatedFile = () => {
+    const newFile = {
+      id: Date.now().toString(),
+      title: 'Uploaded_Notes_' + Math.floor(Math.random() * 1000) + '.pdf',
+      size: (Math.random() * 3 + 1).toFixed(1) + ' MB',
+      date: 'Just now',
+      iconBg: COLORS.blue100,
+      iconColor: COLORS.blue500
+    };
+    saveFiles([newFile, ...uploads]);
+  };
+
+  const deleteFile = (id) => {
+    saveFiles(uploads.filter(u => u.id !== id));
+  };
+
   return (
     <View style={styles.screenContainer}>
       <View style={styles.screenHeader}>
@@ -339,41 +459,38 @@ export function StudentUploadNotesScreen({ navigation }) {
         <Text style={styles.pageTitle}>Upload Notes</Text>
       </View>
       <ScrollView style={{ flex: 1, padding: 24 }}>
-        <TouchableOpacity style={styles.uploadArea}>
+        <TouchableOpacity style={styles.uploadArea} onPress={uploadSimulatedFile}>
           <UploadCloud color={COLORS.blue500} size={40} style={{ marginBottom: 12 }} />
           <Text style={styles.uploadAreaTitle}>Tap to browse or drag file</Text>
           <Text style={styles.uploadAreaSub}>PDF, DOCX, Images (Max 10MB)</Text>
         </TouchableOpacity>
 
         <Text style={[styles.cardTitle, { marginBottom: 16 }]}>My Uploads</Text>
-        {[
-          { id: 1, title: 'Physics Formula Sheet.pdf', size: '1.2 MB', date: 'Today', iconBg: COLORS.red100, iconColor: COLORS.red500 },
-          { id: 2, title: 'Calculus Handout.docx', size: '2.4 MB', date: 'Yesterday', iconBg: COLORS.blue100, iconColor: COLORS.blue500 }
-        ].map(file => (
-          <View key={file.id} style={styles.uploadItem}>
-             <View style={[styles.uploadIconWrap, { backgroundColor: file.iconBg }]}>
-               <FileText color={file.iconColor} size={24} />
-             </View>
-             <View style={{ flex: 1 }}>
-               <Text style={styles.uploadItemTitle}>{file.title}</Text>
-               <Text style={styles.uploadItemSub}>{file.size} • {file.date}</Text>
-             </View>
-             <TouchableOpacity style={{ padding: 8 }}>
-               <Trash2 color={COLORS.gray400} size={20} />
-             </TouchableOpacity>
-          </View>
-        ))}
+        {uploads.length === 0 ? (
+          <Text style={{ color: COLORS.gray500, fontStyle: 'italic' }}>No uploads yet.</Text>
+        ) : (
+          uploads.map(file => (
+            <View key={file.id} style={styles.uploadItem}>
+               <View style={[styles.uploadIconWrap, { backgroundColor: file.iconBg }]}>
+                 <FileText color={file.iconColor} size={24} />
+               </View>
+               <View style={{ flex: 1 }}>
+                 <Text style={styles.uploadItemTitle}>{file.title}</Text>
+                 <Text style={styles.uploadItemSub}>{file.size} • {file.date}</Text>
+               </View>
+               <TouchableOpacity onPress={() => deleteFile(file.id)} style={{ padding: 8 }}>
+                 <Trash2 color={COLORS.gray400} size={20} />
+               </TouchableOpacity>
+            </View>
+          ))
+        )}
       </ScrollView>
     </View>
   );
 }
 
 export function StudentWatchVideosScreen({ navigation }) {
-  const videos = [
-    { id: 1, title: 'Calculus: Integration Basics', duration: '12:45', colors: [COLORS.blue400, '#6366F1'] },
-    { id: 2, title: "Newton's Laws of Motion", duration: '18:20', colors: [COLORS.green500, '#14B8A6'] },
-    { id: 3, title: 'Organic Chemistry Intro', duration: '22:10', colors: [COLORS.orange400, COLORS.red500] },
-  ];
+  const videos = [];
 
   return (
     <View style={[styles.screenContainer, { backgroundColor: COLORS.gray50 }]}>
@@ -384,22 +501,28 @@ export function StudentWatchVideosScreen({ navigation }) {
         <Text style={styles.pageTitle}>Watch Videos</Text>
       </View>
       <ScrollView style={{ flex: 1, padding: 16 }}>
-        {videos.map(v => (
-          <TouchableOpacity key={v.id} style={styles.videoCard}>
-            <LinearGradient colors={v.colors} style={styles.videoThumb}>
-              <View style={styles.videoPlayBtn}>
-                <PlayCircle color={COLORS.blue500} size={28} />
+        {videos.length === 0 ? (
+          <View style={{ alignItems: 'center', marginTop: 40 }}>
+            <Text style={{ color: COLORS.gray500, fontStyle: 'italic' }}>No videos available.</Text>
+          </View>
+        ) : (
+          videos.map(v => (
+            <TouchableOpacity key={v.id} style={styles.videoCard}>
+              <LinearGradient colors={v.colors} style={styles.videoThumb}>
+                <View style={styles.videoPlayBtn}>
+                  <PlayCircle color={COLORS.blue500} size={28} />
+                </View>
+                <View style={styles.videoDurationWrap}>
+                  <Text style={styles.videoDurationText}>{v.duration}</Text>
+                </View>
+              </LinearGradient>
+              <View style={{ padding: 16 }}>
+                <Text style={styles.videoTitle}>{v.title}</Text>
+                <Text style={styles.videoSubTitle}>AI Prep Channel • 1.2k views</Text>
               </View>
-              <View style={styles.videoDurationWrap}>
-                <Text style={styles.videoDurationText}>{v.duration}</Text>
-              </View>
-            </LinearGradient>
-            <View style={{ padding: 16 }}>
-              <Text style={styles.videoTitle}>{v.title}</Text>
-              <Text style={styles.videoSubTitle}>AI Prep Channel • 1.2k views</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
     </View>
   );
@@ -449,6 +572,11 @@ const styles = StyleSheet.create({
   quickActionGroup: { alignItems: 'center', width: '23%', marginBottom: 16 },
   quickActionBtn: { width: 72, height: 72, borderRadius: 20, alignItems: 'center', justifyContent: 'center', elevation: 4 },
   quickActionLabel: { fontSize: 11, fontWeight: '600', color: COLORS.gray600, textAlign: 'center', marginTop: 8 },
+  largeActionCard: { marginBottom: 16, borderRadius: 24, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
+  largeActionGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 24, borderRadius: 24 },
+  largeActionContent: { flex: 1, marginRight: 16 },
+  largeActionTitle: { fontSize: 20, fontWeight: '800', color: '#FFF', marginBottom: 4 },
+  largeActionSub: { fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.8)' },
   pageTitle: { fontSize: 24, fontWeight: '700', color: COLORS.gray900, marginBottom: 4 },
   pageSubtitle: { fontSize: 14, color: COLORS.gray500, marginBottom: 24 },
   datesRow: { flexDirection: 'row', marginBottom: 32 },

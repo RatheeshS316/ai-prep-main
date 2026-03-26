@@ -14,37 +14,33 @@ import { StaffHomeScreen, UploadMaterialScreen, StudentsScreen, CreateTestScreen
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-const STUDENT_TASKS_INITIAL = [
-  { id: 1, title: 'Revise Calculus', completed: true },
-  { id: 2, title: 'Solve 30 Qs', completed: false },
-  { id: 3, title: 'Take Physics Test', completed: false }
-];
+const STUDENT_TASKS_INITIAL = [];
 
 const STAFF_INITIAL_DATA = {
-  profile: { name: 'Prof. Sarah Jenkins', subject: 'Mathematics', role: 'Senior Educator' },
-  students: [
-    { id: '1', name: 'Alex Johnson', grade: 'A', score: 92, avatar: 'AJ' },
-    { id: '2', name: 'Maria Garcia', grade: 'B', score: 78, avatar: 'MG' },
-    { id: '3', name: 'James Smith', grade: 'C', score: 65, avatar: 'JS' },
-    { id: '4', name: 'Linda Chen', grade: 'A', score: 95, avatar: 'LC' },
-  ],
-  materials: [
-    { id: '1', title: 'Calculus Chapter 4', type: 'PDF', date: 'Oct 15', size: '2.4 MB' },
-    { id: '2', title: 'Algebra Practice Set', type: 'DOC', date: 'Oct 18', size: '1.1 MB' },
-  ],
-  tests: [
-    { id: '1', title: 'Midterm: Calculus', date: 'Oct 25', duration: '60m', questions: 30, status: 'Upcoming' },
-    { id: '2', title: 'Quiz: Derivatives', date: 'Oct 10', duration: '30m', questions: 15, status: 'Completed' },
-  ]
+  profile: { name: '', subject: '', role: '' },
+  students: [],
+  materials: [],
+  tests: []
 };
 
 //-----------------------------------
 // STUDENT NAVIGATION
 //-----------------------------------
-function StudentTabs({ handleLogout, navigation }) {
-  const [tasks, setTasks] = useState(STUDENT_TASKS_INITIAL);
+function StudentTabs({ handleLogout, navigation, currentUser }) {
+  const [tasks, setTasks] = useState([]);
   const [modalConfig, setModalConfig] = useState({ isOpen: false, type: '', data: null });
   const [inputValue, setInputValue] = useState('');
+
+  React.useEffect(() => {
+    AsyncStorage.getItem(`tasks_${currentUser.id}`).then(res => {
+      if (res) setTasks(JSON.parse(res));
+    });
+  }, []);
+
+  const save = async (newTasks) => {
+    setTasks(newTasks);
+    await AsyncStorage.setItem(`tasks_${currentUser.id}`, JSON.stringify(newTasks));
+  };
 
   const completedTasks = tasks.filter(t => t.completed).length;
   const progressPercent = tasks.length === 0 ? 0 : Math.round((completedTasks / tasks.length) * 100);
@@ -58,14 +54,14 @@ function StudentTabs({ handleLogout, navigation }) {
   const saveTask = () => {
     if (!inputValue.trim()) return;
     if (modalConfig.type === 'add_task') {
-      setTasks([...tasks, { id: Date.now(), title: inputValue, completed: false }]);
+      save([...tasks, { id: Date.now(), title: inputValue, completed: false }]);
     } else if (modalConfig.type === 'edit_task') {
-      setTasks(tasks.map(t => t.id === modalConfig.data.id ? { ...t, title: inputValue } : t));
+      save(tasks.map(t => t.id === modalConfig.data.id ? { ...t, title: inputValue } : t));
     }
     closeModal();
   };
-  const deleteTask = (id) => setTasks(tasks.filter(t => t.id !== id));
-  const toggleTask = (id) => setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  const deleteTask = (id) => save(tasks.filter(t => t.id !== id));
+  const toggleTask = (id) => save(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
 
   return (
     <>
@@ -83,7 +79,7 @@ function StudentTabs({ handleLogout, navigation }) {
           name="Home" 
           options={{ tabBarIcon: ({ color }) => <Home color={color} size={24} /> }}
         >
-          {() => <HomeTab tasks={tasks} progressPercent={progressPercent} completedTasks={completedTasks} toggleTask={toggleTask} openModal={openModal} deleteTask={deleteTask} navigateToScreen={(s) => navigation.navigate(s)} navigateToTab={(t) => navigation.navigate(t)} />}
+          {() => <HomeTab tasks={tasks} progressPercent={progressPercent} completedTasks={completedTasks} toggleTask={toggleTask} openModal={openModal} deleteTask={deleteTask} navigateToScreen={(s) => navigation.navigate(s)} navigateToTab={(t) => navigation.navigate(t)} currentUser={currentUser} />}
         </Tab.Screen>
         <Tab.Screen 
           name="Study" 
@@ -92,14 +88,14 @@ function StudentTabs({ handleLogout, navigation }) {
           {() => <StudyTab tasks={tasks} openModal={openModal} toggleTask={toggleTask} deleteTask={deleteTask} />}
         </Tab.Screen>
         <Tab.Screen 
-          name="AI" 
+          name="AIChatPage" 
           options={{ tabBarLabel: 'AI Chat', tabBarIcon: ({ color }) => <MessageSquare color={color} size={24} /> }}
         >
-          {() => <AIChatTab />}
+          {() => <AIChatTab currentUser={currentUser} />}
         </Tab.Screen>
         <Tab.Screen 
-          name="Test" 
-          options={{ tabBarIcon: ({ color }) => <FileText color={color} size={24} /> }}
+          name="TestPage" 
+          options={{ tabBarLabel: 'Test Page', tabBarIcon: ({ color }) => <FileText color={color} size={24} /> }}
         >
           {() => <TestTab />}
         </Tab.Screen>
@@ -107,7 +103,7 @@ function StudentTabs({ handleLogout, navigation }) {
           name="Profile" 
           options={{ tabBarIcon: ({ color }) => <UserIcon color={color} size={24} /> }}
         >
-          {() => <ProfileTab onLogout={handleLogout} />}
+          {() => <ProfileTab onLogout={handleLogout} currentUser={currentUser} />}
         </Tab.Screen>
       </Tab.Navigator>
 
@@ -125,13 +121,15 @@ function StudentTabs({ handleLogout, navigation }) {
   );
 }
 
-function StudentApp({ handleLogout }) {
+function StudentApp({ handleLogout, currentUser }) {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="StudentTabs">
-        {(props) => <StudentTabs {...props} handleLogout={handleLogout} />}
+        {(props) => <StudentTabs {...props} handleLogout={handleLogout} currentUser={currentUser} />}
       </Stack.Screen>
-      <Stack.Screen name="UploadNotes" component={StudentUploadNotesScreen} />
+      <Stack.Screen name="UploadNotes">
+        {(props) => <StudentUploadNotesScreen {...props} currentUser={currentUser} />}
+      </Stack.Screen>
       <Stack.Screen name="WatchVideos" component={StudentWatchVideosScreen} />
     </Stack.Navigator>
   );
@@ -168,14 +166,40 @@ function StaffTabs({ handleLogout, navigation, data, commands }) {
   );
 }
 
-function StaffApp({ handleLogout }) {
-  const [data, setData] = useState(STAFF_INITIAL_DATA);
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+function StaffApp({ handleLogout, currentUser }) {
+  const [data, setData] = useState({
+    profile: { name: currentUser.fullName, subject: currentUser.department || 'General', role: 'Staff Educator' },
+    students: [], materials: [], tests: []
+  });
+
+  React.useEffect(() => {
+    const loadData = async () => {
+      try {
+        const stored = await AsyncStorage.getItem(`staff_data_${currentUser.id}`);
+        if (stored) setData(JSON.parse(stored));
+        const allUsers = JSON.parse(await AsyncStorage.getItem('app_users') || '[]');
+        const stds = allUsers.filter(u => u.role === 'Student').map(s => ({
+          id: s.id, name: s.fullName, score: Math.floor(Math.random() * 40) + 60, avatar: s.fullName.charAt(0).toUpperCase()
+        }));
+        setData(p => ({ ...p, students: stds }));
+      } catch(e) {}
+    };
+    loadData();
+  }, []);
+
+  const save = async (newData) => {
+    setData(newData);
+    await AsyncStorage.setItem(`staff_data_${currentUser.id}`, JSON.stringify(newData));
+  };
+
   const commands = {
-    addStudent: (student) => setData(p => ({ ...p, students: [...p.students, { ...student, id: Date.now().toString() }] })),
-    deleteStudent: (id) => setData(p => ({ ...p, students: p.students.filter(s => s.id !== id) })),
-    addMaterial: (material) => setData(p => ({ ...p, materials: [{ ...material, id: Date.now().toString(), date: 'Just now' }, ...p.materials] })),
-    deleteMaterial: (id) => setData(p => ({ ...p, materials: p.materials.filter(m => m.id !== id) })),
-    addTest: (test) => setData(p => ({ ...p, tests: [{ ...test, id: Date.now().toString(), status: 'Upcoming' }, ...p.tests] })),
+    addStudent: (student) => save({ ...data, students: [...data.students, { ...student, id: Date.now().toString() }] }),
+    deleteStudent: (id) => save({ ...data, students: data.students.filter(s => s.id !== id) }),
+    addMaterial: (material) => save({ ...data, materials: [{ ...material, id: Date.now().toString(), date: 'Just now' }, ...data.materials] }),
+    deleteMaterial: (id) => save({ ...data, materials: data.materials.filter(m => m.id !== id) }),
+    addTest: (test) => save({ ...data, tests: [{ ...test, id: Date.now().toString(), status: 'Upcoming' }, ...data.tests] }),
   };
 
   return (
@@ -200,18 +224,46 @@ function StaffApp({ handleLogout }) {
 // MAIN APP ROUTER
 //-----------------------------------
 export default function AppNavigator() {
-  const [appState, setAppState] = useState('auth'); // auth, loading, student, staff
+  const [appState, setAppState] = useState('auth'); 
+  const [currentUser, setCurrentUser] = useState(null);
 
-  const handleLogin = (role) => {
+  const handleLogin = async (role, formData, mode) => {
     setAppState('loading');
-    setTimeout(() => {
-      setAppState(role === 'Student' ? 'student' : 'staff');
-    }, 1500);
+    try {
+      const usersStr = await AsyncStorage.getItem('app_users');
+      let globalUsers = usersStr ? JSON.parse(usersStr) : [];
+      let finalUser = null;
+
+      if (mode === 'signup') {
+        finalUser = { id: Date.now().toString(), role, ...formData };
+        globalUsers.push(finalUser);
+        await AsyncStorage.setItem('app_users', JSON.stringify(globalUsers));
+      } else {
+        finalUser = globalUsers.find(u => 
+          u.role === role && u.password === formData.password &&
+          ((role === 'Student' && u.registerNumber === formData.registerNumber) || 
+           (role === 'Staff' && u.email === formData.email))
+        );
+        if (!finalUser) {
+          alert("Invalid credentials. Please check and try again.");
+          setAppState('auth');
+          return;
+        }
+      }
+
+      setCurrentUser(finalUser);
+      setTimeout(() => {
+        setAppState(role === 'Student' ? 'student' : 'staff');
+      }, 1000);
+    } catch(e) {
+      setAppState('auth');
+    }
   };
 
   const handleLogout = () => {
     setAppState('loading');
     setTimeout(() => {
+      setCurrentUser(null);
       setAppState('auth');
     }, 800);
   };
@@ -223,9 +275,9 @@ export default function AppNavigator() {
       ) : appState === 'auth' ? (
         <AuthScreen onLogin={handleLogin} />
       ) : appState === 'student' ? (
-        <StudentApp handleLogout={handleLogout} />
+        <StudentApp handleLogout={handleLogout} currentUser={currentUser} />
       ) : (
-        <StaffApp handleLogout={handleLogout} />
+        <StaffApp handleLogout={handleLogout} currentUser={currentUser} />
       )}
     </NavigationContainer>
   );

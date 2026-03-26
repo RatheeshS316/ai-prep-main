@@ -94,7 +94,7 @@ export default function AuthScreen({ onLogin }) {
 
   const handleSubmit = () => {
     if (validate()) {
-      onLogin(role);
+      onLogin(role, formData, mode);
     }
   };
 
